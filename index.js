@@ -1,24 +1,49 @@
-if (typeof process !== 'undefined' && parseInt(process.versions.node.split('.')[0]) < 14) {
-  console.error('Your node version is currently', process.versions.node)
-  console.error('Please update it to a version >= 14.x.x from https://nodejs.org/')
-  process.exit(1)
+const bedrock = require("bedrock-protocol");
+const express = require("express");
+
+const app = express();
+
+// Simple web server for UptimeRobot
+app.get("/", (req, res) => res.send("Bot is alive"));
+app.listen(process.env.PORT || 3000, "0.0.0.0", () => console.log("Web server running"));
+
+function startBot() {
+  const bot = bedrock.createClient({
+    host: "Asnhuaswal.aternos.me", // Your Aternos IP
+    port: 56898,                    // Your Aternos Port
+    username: "AFK_mullaji",            // Bot username
+    offline: true,                  // Offline mode
+    version: "1.26.0"               // Force server version
+  });
+
+  bot.on("join", () => {
+    console.log("✅ Bot joined server!");
+
+    // Anti-AFK: jump + tiny random rotation
+    setInterval(() => {
+      try {
+        bot.queue("player_action", { action: "jump" });
+        bot.queue("move_player", {
+          runtime_id: bot.runtime_entity_id,
+          position: { x: 0, y: 100, z: 0 },
+          pitch: 0,
+          yaw: Math.random() * 360,
+          head_yaw: 0,
+          mode: 0,
+          on_ground: true,
+          tick: 0
+        });
+      } catch {}
+    }, 6000);
+  });
+
+  bot.on("disconnect", (packet) => {
+    console.log("❌ Disconnected! Reconnecting in 5 sec...", packet);
+    setTimeout(startBot, 5000); // Auto reconnect
+  });
+
+  bot.on("error", (err) => console.log("⚠️ Error:", err.message));
 }
 
-const { Client } = require('./src/client')
-const { Server } = require('./src/server')
-const { Relay } = require('./src/relay')
-const { createClient, ping } = require('./src/createClient')
-const { createServer } = require('./src/createServer')
-const { Titles } = require('prismarine-auth')
-const { ServerAdvertisement } = require('./src/server/advertisement')
-
-module.exports = {
-  Client,
-  Server,
-  Relay,
-  createClient,
-  ping,
-  createServer,
-  title: Titles,
-  ServerAdvertisement
-}
+// Start bot
+startBot();
